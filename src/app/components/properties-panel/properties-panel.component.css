@@ -1,0 +1,24 @@
+:host {
+  display: block;
+}
+
+.panel {
+  padding: 0;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.chev {
+  display: inline-block;
+  font-size: 10px;
+  transition: transform 0.15s ease;
+  color: var(--text-faint);
+}
+
+.chev.rotated {
+  transform: rotate(-90deg);
+}

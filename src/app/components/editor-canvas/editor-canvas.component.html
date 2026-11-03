@@ -1,0 +1,20 @@
+<div class="canvas-wrap">
+  <div #host class="host">
+    <canvas #canvas></canvas>
+  </div>
+
+  <div class="zoom-controls">
+    <button class="app-icon-btn" (click)="zoomIn()" title="Zoom in (+)">+</button>
+    <button class="app-icon-btn" (click)="zoomOut()" title="Zoom out (-)">−</button>
+    <button class="app-icon-btn" (click)="resetView()" title="Reset view (0)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12a9 9 0 1 0 9-9" />
+        <path d="M3 4v5h5" />
+      </svg>
+    </button>
+  </div>
+
+  <div class="tool-hint" [class.show]="tool() === 'path'">
+    <span class="kbd">P</span> Path — click to add points
+  </div>
+</div>

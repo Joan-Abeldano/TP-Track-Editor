@@ -1,0 +1,179 @@
+<div class="panel">
+  <div class="section">
+    <div class="section-title" (click)="toggle('basic')">
+      <span>Track Basics</span>
+      <span class="chev" [class.rotated]="collapsed().basic">▼</span>
+    </div>
+    @if (!collapsed().basic) {
+      <div class="field">
+        <label class="label">Nationality</label>
+        <select [value]="track().nationality" (change)="setStr('nationality', $event)">
+          @for (n of nationalities; track n) {
+            <option [value]="n">{{ n }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label class="label">Length (km)</label>
+        <input type="number" step="0.001" [value]="track().length_km" (focus)="beginEdit()" (blur)="endEdit()" (input)="setNum('length_km', $event)" />
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label class="label">Wet mult</label>
+          <input type="number" step="0.01" [value]="track().wet_weather_probability_multiplier" (focus)="beginEdit()" (blur)="endEdit()" (input)="setNum('wet_weather_probability_multiplier', $event)" />
+        </div>
+        <div class="field">
+          <label class="label">Pit loss (s)</label>
+          <input type="number" step="0.1" [value]="track().pit_lane_loss_s" (focus)="beginEdit()" (blur)="endEdit()" (input)="setNum('pit_lane_loss_s', $event)" />
+        </div>
+        <div class="field">
+          <label class="label">Tyre wear</label>
+          <input type="number" step="0.01" [value]="track().tyre_wear_mult ?? 1" (focus)="beginEdit()" (blur)="endEdit()" (input)="setNum('tyre_wear_mult', $event)" />
+        </div>
+        <div class="field">
+          <label class="label">Fuel cons.</label>
+          <input type="number" step="0.01" [value]="track().fuel_consumption ?? 1" (focus)="beginEdit()" (blur)="endEdit()" (input)="setNum('fuel_consumption', $event)" />
+        </div>
+        <div class="field">
+          <label class="label">DNF mod</label>
+          <input type="number" step="0.01" [value]="track().dnf_modifier ?? 1" (focus)="beginEdit()" (blur)="endEdit()" (input)="setNum('dnf_modifier', $event)" />
+        </div>
+        <div class="field">
+          <label class="label">Lap mod</label>
+          <input type="number" step="0.01" [value]="track().lap_modifier ?? 1" (focus)="beginEdit()" (blur)="endEdit()" (input)="setNum('lap_modifier', $event)" />
+        </div>
+        <div class="field">
+          <label class="label">Track time</label>
+          <input type="number" step="0.01" [value]="track().track_time_mult ?? 1" (focus)="beginEdit()" (blur)="endEdit()" (input)="setNum('track_time_mult', $event)" />
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="section">
+    <div class="section-title" (click)="toggle('racing')">
+      <span>Racing Surface</span>
+      <span class="chev" [class.rotated]="collapsed().racing">▼</span>
+    </div>
+    @if (!collapsed().racing) {
+      <div class="field-row">
+        <label>Enabled</label>
+        <input type="checkbox" [checked]="track().racing_surface.enabled" (change)="setSurfaceFlag('enabled', $event)" />
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label class="label">Width (m)</label>
+          <input type="number" step="0.1" [value]="track().racing_surface.width_m" (focus)="beginEdit()" (blur)="endEdit()" (input)="setSurfaceNum('width_m', $event)" />
+        </div>
+        <div class="field">
+          <label class="label">Edge margin</label>
+          <input type="number" step="0.1" [value]="track().racing_surface.edge_margin_m" (focus)="beginEdit()" (blur)="endEdit()" (input)="setSurfaceNum('edge_margin_m', $event)" />
+        </div>
+        <div class="field">
+          <label class="label">Corridors</label>
+          <input type="number" step="1" [value]="track().racing_surface.corridor_count" (focus)="beginEdit()" (blur)="endEdit()" (input)="setSurfaceNum('corridor_count', $event)" />
+        </div>
+        <div class="field">
+          <label class="label">Lat. scale</label>
+          <input type="number" step="0.1" [value]="track().racing_surface.visual_lateral_scale" (focus)="beginEdit()" (blur)="endEdit()" (input)="setSurfaceNum('visual_lateral_scale', $event)" />
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="section">
+    <div class="section-title" (click)="toggle('grid')">
+      <span>Starting Grid</span>
+      <span class="chev" [class.rotated]="collapsed().grid">▼</span>
+    </div>
+    @if (!collapsed().grid) {
+      <div class="field">
+        <label class="label">Pole side</label>
+        <select [value]="track().starting_grid.pole_side" (change)="setGridStr('pole_side', $event)">
+          <option value="left">left</option>
+          <option value="right">right</option>
+        </select>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label class="label">Row spacing</label>
+          <input type="number" step="0.5" [value]="track().starting_grid.row_spacing_m" (focus)="beginEdit()" (blur)="endEdit()" (input)="setGridNum('row_spacing_m', $event)" />
+        </div>
+        <div class="field">
+          <label class="label">Col spacing</label>
+          <input type="number" step="0.5" [value]="track().starting_grid.column_spacing_m" (focus)="beginEdit()" (blur)="endEdit()" (input)="setGridNum('column_spacing_m', $event)" />
+        </div>
+        <div class="field">
+          <label class="label">Stagger</label>
+          <input type="number" step="0.5" [value]="track().starting_grid.stagger_m" (focus)="beginEdit()" (blur)="endEdit()" (input)="setGridNum('stagger_m', $event)" />
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="section">
+    <div class="section-title" (click)="toggle('canvas')">
+      <span>Canvas &amp; Visual</span>
+      <span class="chev" [class.rotated]="collapsed().canvas">▼</span>
+    </div>
+    @if (!collapsed().canvas) {
+      <div class="grid2">
+        <div class="field">
+          <label class="label">Canvas W</label>
+          <input type="number" step="1" [value]="track().raw_canvas_size?.[0] ?? 1044" (focus)="beginEdit()" (blur)="endEdit()" (input)="setCanvasSize(0, $event)" />
+        </div>
+        <div class="field">
+          <label class="label">Canvas H</label>
+          <input type="number" step="1" [value]="track().raw_canvas_size?.[1] ?? 1080" (focus)="beginEdit()" (blur)="endEdit()" (input)="setCanvasSize(1, $event)" />
+        </div>
+      </div>
+      <div class="field-row">
+        <label>use_raw_canvas_coordinates</label>
+        <input type="checkbox" [checked]="track().use_raw_canvas_coordinates ?? true" (change)="setFlag('use_raw_canvas_coordinates', $event)" />
+      </div>
+      <div class="field-row">
+        <label>hide_polyline_visual</label>
+        <input type="checkbox" [checked]="track().hide_polyline_visual ?? false" (change)="setFlag('hide_polyline_visual', $event)" />
+      </div>
+    }
+  </div>
+
+  <div class="section">
+    <div class="section-title" (click)="toggle('view')">
+      <span>Editor View</span>
+      <span class="chev" [class.rotated]="collapsed().view">▼</span>
+    </div>
+    @if (!collapsed().view) {
+      <div class="field-row">
+        <label>Show background</label>
+        <input type="checkbox" [checked]="showBackground()" (change)="showBackground.set(checked($event))" />
+      </div>
+      <div class="field-row">
+        <label>Show points</label>
+        <input type="checkbox" [checked]="showPoints()" (change)="showPoints.set(checked($event))" />
+      </div>
+      <div class="field-row">
+        <label>Show microsectors</label>
+        <input type="checkbox" [checked]="showMicrosectors()" (change)="showMicrosectors.set(checked($event))" />
+      </div>
+      <div class="field-row">
+        <label>Show DRS zones</label>
+        <input type="checkbox" [checked]="showDrs()" (change)="showDrs.set(checked($event))" />
+      </div>
+      <div class="field-row">
+        <label>Show sector splits</label>
+        <input type="checkbox" [checked]="showSectors()" (change)="showSectors.set(checked($event))" />
+      </div>
+      <div class="field-row">
+        <label>Snap to grid</label>
+        <input type="checkbox" [checked]="snapToGrid()" (change)="snapToGrid.set(checked($event))" />
+      </div>
+      @if (snapToGrid()) {
+        <div class="field">
+          <label class="label">Grid size (px)</label>
+          <input type="number" step="1" min="2" [value]="gridSize()" (focus)="beginEdit()" (blur)="endEdit()" (input)="gridSize.set(int(val($event)))" />
+        </div>
+      }
+    }
+  </div>
+</div>

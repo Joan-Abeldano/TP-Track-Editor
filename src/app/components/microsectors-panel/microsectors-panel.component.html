@@ -1,0 +1,74 @@
+<div class="panel">
+  <div class="panel-head">
+    <div class="head-info">
+      <span class="head-title">Microsectors</span>
+      <span class="badge">{{ track().micro_sectors.length }}</span>
+      <span class="sum-pill" [class.ok]="totalValid()" [class.warn]="!totalValid()">
+        Σ {{ totalPct().toFixed(2) }}%
+      </span>
+    </div>
+    <div class="head-actions">
+      <button class="app-icon-btn" (click)="addMicro()" title="Add microsector (appends with remaining %)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <button class="app-icon-btn" (click)="normalizeAll()" title="Normalize to 100%">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v6h-6"/></svg>
+      </button>
+      <button class="app-icon-btn danger-icon" (click)="clearAll()" title="Clear all">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  @if (track().micro_sectors.length === 0) {
+    <div class="empty">
+      <p>No microsectors</p>
+      <span>Use <strong>+</strong> to add a segment, then choose type and target speed.</span>
+    </div>
+  } @else {
+    <div class="hint-bar">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      Drag the dark divider lines on the track to redistribute length between two microsectors.
+    </div>
+    <div class="micro-list">
+      @for (m of track().micro_sectors; track $index; let i = $index) {
+        <div class="micro-row" [class.selected]="selected() === i" (click)="select(i)">
+          <button
+            class="micro-color"
+            [style.background]="colorFor(m.type)"
+            (click)="cycleType(i, $event)"
+            title="Click to cycle type"
+          ></button>
+          <div class="micro-info">
+            <div class="micro-row1">
+              <span class="pct-label">#{{ i }}</span>
+              <span class="cum-label">&#64; {{ cumPct()[i].toFixed(2) }}%</span>
+              <span class="len-meters">{{ lengthMeters(m.length_pct) }}</span>
+              <select [value]="m.type" (change)="updateField(i, 'type', $event)" (click)="$event.stopPropagation()">
+                @for (ct of cornerTypes; track ct.value) {
+                  <option [value]="ct.value">{{ ct.label }}</option>
+                }
+              </select>
+            </div>
+            <div class="micro-row2">
+              <div class="inp-field">
+                <label>len %</label>
+                <input type="number" step="0.01" min="0" max="100" [value]="m.length_pct" (focus)="beginEdit()" (blur)="endEdit()" (input)="updateField(i, 'length_pct', $event)" (click)="$event.stopPropagation()" />
+              </div>
+              <div class="inp-field">
+                <label>km/h</label>
+                <input type="number" step="1" min="0" [value]="m.target_speed_kmh" (focus)="beginEdit()" (blur)="endEdit()" (input)="updateField(i, 'target_speed_kmh', $event)" (click)="$event.stopPropagation()" />
+              </div>
+              <button class="row-insert" (click)="insertAfter(i, $event)" title="Insert a new microsector after this one (splits this in half)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              </button>
+              <button class="row-del" (click)="deleteMicro(i, $event)" title="Delete">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

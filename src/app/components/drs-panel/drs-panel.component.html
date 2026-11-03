@@ -1,0 +1,71 @@
+<div class="panel">
+  <div class="panel-head">
+    <div class="head-info">
+      <span class="head-title">DRS Zones</span>
+      <span class="badge">{{ track().drs_zones.length }}</span>
+    </div>
+    <div class="head-actions">
+      <button class="app-icon-btn" (click)="add()" title="Add DRS zone (5% det, 10% start, 30% end)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>
+  </div>
+
+  @if (track().drs_zones.length === 0) {
+    <div class="empty">
+      <p>No DRS zones</p>
+      <span>Click <strong>+</strong> to add one, then drag the colored markers on the track to position it.</span>
+    </div>
+  } @else {
+    <div class="hint-bar">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      Drag the markers on the track: <span class="dot det"></span>detection <span class="dot start"></span>start <span class="dot end"></span>end
+    </div>
+    <div class="drs-list">
+      @for (z of track().drs_zones; track $index; let i = $index) {
+        <div class="drs-row" [class.selected]="selected() === i" (click)="select(i)">
+          <div class="drs-head">
+            <div class="drs-label-wrap">
+              <span class="drs-label">DRS {{ i + 1 }}</span>
+              <span class="drs-len-pill">{{ zoneLengthPct(z).toFixed(1) }}% · {{ zoneLengthMeters(z) }}</span>
+            </div>
+            <div class="drs-head-actions">
+              <button class="row-dup" (click)="duplicate(i, $event)" title="Duplicate zone">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </button>
+              <button class="row-del" (click)="remove(i, $event)" title="Delete">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="drs-fields">
+            <div class="inp">
+              <label>
+                <span class="dot det"></span>
+                detection
+              </label>
+              <input type="number" step="0.001" min="0" max="1" [value]="z.detection_progress" (focus)="beginEdit()" (blur)="endEdit()" (input)="update(i, 'detection_progress', $event)" (click)="$event.stopPropagation()" />
+              <span class="pct">{{ formatPct(z.detection_progress) }}</span>
+            </div>
+            <div class="inp">
+              <label>
+                <span class="dot start"></span>
+                start
+              </label>
+              <input type="number" step="0.001" min="0" max="1" [value]="z.start_progress" (focus)="beginEdit()" (blur)="endEdit()" (input)="update(i, 'start_progress', $event)" (click)="$event.stopPropagation()" />
+              <span class="pct">{{ formatPct(z.start_progress) }}</span>
+            </div>
+            <div class="inp">
+              <label>
+                <span class="dot end"></span>
+                end
+              </label>
+              <input type="number" step="0.001" min="0" max="1" [value]="z.end_progress" (focus)="beginEdit()" (blur)="endEdit()" (input)="update(i, 'end_progress', $event)" (click)="$event.stopPropagation()" />
+              <span class="pct">{{ formatPct(z.end_progress) }}</span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

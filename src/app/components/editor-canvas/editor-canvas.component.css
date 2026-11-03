@@ -1,0 +1,99 @@
+:host {
+  display: block;
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+
+.canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 50%, #14141f 0%, #0b0b12 80%);
+}
+
+.host {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
+
+:host-context(.tool-select) canvas {
+  cursor: default;
+}
+
+:host-context(.tool-delete) canvas {
+  cursor: not-allowed;
+}
+
+:host-context(.tool-pan) canvas {
+  cursor: grab;
+}
+
+:host-context(.tool-sector) canvas,
+:host-context(.tool-drs) canvas {
+  cursor: cell;
+}
+
+.zoom-controls {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--panel);
+  padding: 4px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.zoom-controls .app-icon-btn {
+  width: 28px;
+  height: 28px;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tool-hint {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--panel);
+  padding: 6px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-dim);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.tool-hint.show {
+  opacity: 1;
+}
+
+.kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  background: var(--bg-elev-3);
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--accent);
+  margin-right: 4px;
+}

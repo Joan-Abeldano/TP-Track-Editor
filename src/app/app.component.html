@@ -1,0 +1,47 @@
+<div class="app-shell" [class]="canvasToolClass()">
+  <header class="top-bar">
+    <app-file-bar></app-file-bar>
+    <app-toolbar></app-toolbar>
+  </header>
+
+  <main class="main-area">
+    <aside class="left-panel">
+      <app-properties-panel></app-properties-panel>
+    </aside>
+
+    <section class="canvas-area">
+      <app-editor-canvas></app-editor-canvas>
+    </section>
+
+    <aside class="right-panel">
+      <div class="tab-bar">
+        <button class="tab" [class.active]="isTab('points')" (click)="setTab('points')">
+          Points
+          <span class="tab-count">{{ pointCount() }}</span>
+        </button>
+        <button class="tab" [class.active]="isTab('micros')" (click)="setTab('micros')">
+          Micros
+          <span class="tab-count">{{ microCount() }}</span>
+        </button>
+        <button class="tab" [class.active]="isTab('drs')" (click)="setTab('drs')">
+          DRS
+          <span class="tab-count">{{ drsCount() }}</span>
+        </button>
+      </div>
+
+      <div class="tab-content">
+        @if (isTab('points')) {
+          <app-points-panel></app-points-panel>
+        }
+        @if (isTab('micros')) {
+          <app-microsectors-panel></app-microsectors-panel>
+        }
+        @if (isTab('drs')) {
+          <app-drs-panel></app-drs-panel>
+        }
+      </div>
+    </aside>
+  </main>
+
+  <app-toast></app-toast>
+</div>
