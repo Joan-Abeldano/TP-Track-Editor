@@ -18,9 +18,17 @@ export class FileBarComponent {
   readonly trackName = this.state.trackName;
   readonly backgroundUrl = this.fileIo.backgroundUrl;
   readonly hasPoints = this.state.hasPoints;
+  showBrandMark = false;
 
   @HostListener('window:keydown', ['$event'])
   onShortcut(e: KeyboardEvent) {
+    const key = e.key.toLowerCase();
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && key === 'y') {
+      this.showBrandMark = true;
+      e.preventDefault();
+      return;
+    }
+
     if (
       e.defaultPrevented ||
       e.target instanceof HTMLInputElement ||
@@ -34,7 +42,6 @@ export class FileBarComponent {
     const modifier = e.ctrlKey || e.metaKey;
     if (!modifier) return;
 
-    const key = e.key.toLowerCase();
     if (e.altKey && e.shiftKey && key === 'o') {
       e.preventDefault();
       void this.onLoadBackground();
@@ -53,6 +60,18 @@ export class FileBarComponent {
       e.preventDefault();
       if (this.hasPoints()) this.onSaveTrack();
     }
+  }
+
+  @HostListener('window:keyup', ['$event'])
+  onShortcutKeyUp(e: KeyboardEvent) {
+    if (['control', 'meta', 'shift', 'y'].includes(e.key.toLowerCase())) {
+      this.showBrandMark = false;
+    }
+  }
+
+  @HostListener('window:blur')
+  onWindowBlur() {
+    this.showBrandMark = false;
   }
 
   async onImportTrack() {

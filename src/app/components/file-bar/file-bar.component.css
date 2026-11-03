@@ -25,6 +25,21 @@
   object-fit: contain;
 }
 
+.brand-mark-easter-egg {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.brand-mark-easter-egg img {
+  width: 100vw;
+  height: 100vh;
+  object-fit: contain;
+}
+
 .brand-name {
   font-weight: 700;
   font-size: 14px;
