@@ -32,6 +32,7 @@ export interface TrackData {
   wet_weather_probability_multiplier: number;
   pit_lane_loss_s: number;
   points: number[][];
+  loop_closed?: boolean;
   sector_splits: number[];
   tyre_wear_mult?: number;
   fuel_consumption?: number;
@@ -54,6 +55,7 @@ export function createEmptyTrack(): TrackData {
     wet_weather_probability_multiplier: 1.0,
     pit_lane_loss_s: 20.0,
     points: [],
+    loop_closed: false,
     sector_splits: [0.33, 0.66],
     tyre_wear_mult: 1.0,
     fuel_consumption: 1.0,

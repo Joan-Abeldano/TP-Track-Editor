@@ -37,6 +37,11 @@
   gap: 2px;
 }
 
+.loop-action {
+  padding: 4px 8px;
+  font-size: 10px;
+}
+
 .state-pill {
   font-size: 9px;
   padding: 1px 6px;

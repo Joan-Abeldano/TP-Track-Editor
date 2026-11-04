@@ -196,7 +196,7 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
     }
 
     if (tool === 'path') {
-      this.handlePathClick(world, hitRadius);
+      this.handlePathClick(world);
     } else if (tool === 'select') {
       const idx = this.geom.nearestPointIndex(track.points, world, hitRadius);
       if (idx !== null) {
@@ -513,7 +513,7 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
     if (e.code === 'Space') this.spaceDown = false;
   };
 
-  private handlePathClick(world: Pt, hitRadius: number) {
+  private handlePathClick(world: Pt) {
     const track = this.state.track();
     const pts = track.points;
 
@@ -525,6 +525,26 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
+    const scale = this.state.view().scale;
+    const pointRadius = Math.max(3, 5 * Math.sqrt(scale));
+    const closeHitRadius = Math.max(12, pointRadius + 2) / scale;
+    const nearFirst = this.geom.dist({ x: pts[0][0], y: pts[0][1] }, world) <= closeHitRadius;
+    const loopClosed = pts.length >= 2 && (
+      track.loop_closed === true || this.arrayEq(pts[0], pts[pts.length - 1])
+    );
+    if (nearFirst && pts.length >= 2) {
+      if (loopClosed) {
+        this.state.toast('Path is already closed. Use Select to move points or Delete to remove.', 'ok');
+        return;
+      }
+      this.state.update((t) => {
+        t.loop_closed = true;
+      });
+      this.state.selectedPointIndex.set(0);
+      this.state.toast('Path closed — clicked the start point', 'ok');
+      return;
+    }
+
     const nearest = this.nearestPathSegment(world, pts);
     if (nearest && nearest.distance <= 14 / this.state.view().scale) {
       const insertIndex = nearest.segmentIndex + 1;
@@ -533,12 +553,6 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
         t.points.splice(insertIndex, 0, [point.x, point.y]);
       });
       this.state.selectedPointIndex.set(insertIndex);
-      return;
-    }
-
-    const nearFirst = this.geom.dist({ x: pts[0][0], y: pts[0][1] }, world) <= hitRadius * 1.5;
-    if (nearFirst && pts.length >= 3) {
-      this.state.toast('Path is closed. Use Select tool to move points or Delete tool to remove.', 'ok');
       return;
     }
 
