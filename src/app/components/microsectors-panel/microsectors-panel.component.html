@@ -8,7 +8,7 @@
       </span>
     </div>
     <div class="head-actions">
-      <button class="app-icon-btn" (click)="addMicro()" title="Add microsector (appends with remaining %)">
+      <button class="app-icon-btn" (click)="addMicro()" title="Split selected microsector in half (or the longest one)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
       </button>
       <button class="app-icon-btn" (click)="normalizeAll()" title="Normalize to 100%">
@@ -23,12 +23,12 @@
   @if (track().micro_sectors.length === 0) {
     <div class="empty">
       <p>No microsectors</p>
-      <span>Use <strong>+</strong> to add a segment, then choose type and target speed.</span>
+      <span>      Select the <strong>Micro</strong> tool and click the track to place a divider.</span>
     </div>
   } @else {
     <div class="hint-bar">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-      Drag the dark divider lines on the track to redistribute length between two microsectors.
+      Select the <strong>Micro</strong> tool and click the track to split a segment. Drag a divider handle to resize neighboring segments.
     </div>
     <div class="micro-list">
       @for (m of track().micro_sectors; track $index; let i = $index) {

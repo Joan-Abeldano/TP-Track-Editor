@@ -21,10 +21,11 @@ export class ToolbarComponent {
   private state = inject(TrackStateService);
 
   readonly tools: ToolDef[] = [
-    { id: 'path', label: 'Path', key: 'P', icon: 'pen', desc: 'Click to add points. Path auto-closes.' },
+    { id: 'path', label: 'Path', key: 'P', icon: 'pen', desc: 'Click near a segment to insert a point, or click away to extend the path.' },
     { id: 'select', label: 'Select', key: 'V', icon: 'cursor', desc: 'Click and drag points to move them.' },
     { id: 'delete', label: 'Delete', key: 'D', icon: 'trash', desc: 'Click a point to remove it.' },
-    { id: 'sector', label: 'Sector', key: 'S', icon: 'flag', desc: 'Click on the track to add a sector split.' },
+    { id: 'sector', label: 'Sector', key: 'S', icon: 'flag', desc: 'Click to add a sector split. Drag an existing split to move it.' },
+    { id: 'micro', label: 'Micro', key: 'M', icon: 'split', desc: 'Click the track to split a microsector. Drag a divider to resize segments.' },
     { id: 'drs', label: 'DRS', key: 'R', icon: 'bolt', desc: 'Click on the track to add a DRS zone.' },
     { id: 'pan', label: 'Pan', key: 'H', icon: 'hand', desc: 'Drag to pan the canvas. (Hold Space with any tool.)' },
   ];
@@ -51,6 +52,7 @@ export class ToolbarComponent {
       cursor: '<svg viewBox="0 0 24 24"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>',
       trash: '<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
       flag: '<svg viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22V15"/></svg>',
+      split: '<svg viewBox="0 0 24 24"><path d="M6 4v5a3 3 0 0 0 3 3h6a3 3 0 0 1 3 3v5"/><path d="M18 4v5a3 3 0 0 1-3 3"/><path d="M3 4h6M15 4h6M15 20h6"/></svg>',
       bolt: '<svg viewBox="0 0 24 24"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>',
       hand: '<svg viewBox="0 0 24 24"><path d="M8 13V5a2 2 0 0 1 4 0v6"/><path d="M12 11V3a2 2 0 0 1 4 0v8"/><path d="M16 11V7a2 2 0 0 1 4 0v8a6 6 0 0 1-6 6h-3a6 6 0 0 1-6-6v-2a2 2 0 0 1 4 0"/></svg>',
       undo: '<svg viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg>',

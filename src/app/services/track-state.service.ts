@@ -1,7 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { TrackData, createEmptyTrack } from '../models/track.model';
 
-export type EditorTool = 'path' | 'select' | 'delete' | 'sector' | 'drs' | 'pan';
+export type EditorTool = 'path' | 'select' | 'delete' | 'sector' | 'micro' | 'drs' | 'pan';
 
 export interface ViewTransform {
   scale: number;
@@ -35,6 +35,7 @@ export class TrackStateService {
   readonly showSectors = signal<boolean>(true);
   readonly showPoints = signal<boolean>(true);
   readonly showBackground = signal<boolean>(true);
+  readonly thinTrackLine = signal<boolean>(false);
   readonly snapToGrid = signal<boolean>(false);
   readonly gridSize = signal<number>(15);
   readonly view = signal<ViewTransform>({ scale: 1, offsetX: 0, offsetY: 0 });

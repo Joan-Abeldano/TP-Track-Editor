@@ -153,6 +153,10 @@
         <input type="checkbox" [checked]="showPoints()" (change)="showPoints.set(checked($event))" />
       </div>
       <div class="field-row">
+        <label>Thin track line</label>
+        <input type="checkbox" [checked]="thinTrackLine()" (change)="thinTrackLine.set(checked($event))" />
+      </div>
+      <div class="field-row">
         <label>Show microsectors</label>
         <input type="checkbox" [checked]="showMicrosectors()" (change)="showMicrosectors.set(checked($event))" />
       </div>

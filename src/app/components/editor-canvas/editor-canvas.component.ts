@@ -14,13 +14,14 @@ import { FileIoService } from '../../services/file-io.service';
 import { GeometryService, Pt, CumulativePoint } from '../../services/geometry.service';
 import { CORNER_TYPES } from '../../models/track.model';
 
-type MarkerKind = 'drs-det' | 'drs-start' | 'drs-end' | 'micro-boundary';
+type MarkerKind = 'drs-det' | 'drs-start' | 'drs-end' | 'micro-boundary' | 'sector-split';
 
 interface MarkerRef {
   kind: MarkerKind;
   zoneIndex?: number;
   field?: 'detection_progress' | 'start_progress' | 'end_progress';
   microIndex?: number;
+  splitIndex?: number;
 }
 
 @Component({
@@ -188,6 +189,8 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
         this.state.selectedDrsIndex.set(marker.zoneIndex!);
       } else if (marker.kind === 'micro-boundary') {
         this.state.selectedMicroIndex.set(marker.microIndex!);
+      } else if (marker.kind === 'sector-split') {
+        this.state.selectedSectorIndex.set(marker.splitIndex!);
       }
       return;
     }
@@ -214,6 +217,8 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
       if (idx !== null) this.deletePoint(idx);
     } else if (tool === 'sector') {
       this.addSectorAt(world);
+    } else if (tool === 'micro') {
+      this.addMicrosectorAt(world);
     } else if (tool === 'drs') {
       this.addDrsAt(world);
     }
@@ -282,6 +287,11 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
       this.state.endInteraction();
     }
     if (this.draggingMarker) {
+      if (this.draggingMarker.kind === 'sector-split') {
+        this.state.update((t) => {
+          t.sector_splits.sort((a, b) => a - b);
+        });
+      }
       this.state.endInteraction();
       this.draggingMarker = null;
     }
@@ -328,6 +338,13 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
         mi.length_pct = Number((newC - prevC).toFixed(4));
         mi1.length_pct = Number((sum - mi.length_pct).toFixed(4));
       });
+    } else if (m.kind === 'sector-split') {
+      const i = m.splitIndex!;
+      this.state.update((t) => {
+        if (i < t.sector_splits.length) {
+          t.sector_splits[i] = Number(progress.toFixed(4));
+        }
+      });
     }
   }
 
@@ -340,8 +357,15 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
     const scale = this.state.view().scale;
     const widthWorld = this.getTrackWidthWorld();
     const drsMarkerScreenR = Math.max(8, 7 * Math.sqrt(scale));
-    const microBoundaryHalfWorld = widthWorld / 2 + 6 / scale;
-    const microBoundaryScreenR = Math.max(8, microBoundaryHalfWorld * scale * 0.6);
+    const microBoundaryScreenR = Math.max(12, widthWorld * scale / 2 + 6);
+
+    for (let i = 0; i < track.sector_splits.length; i++) {
+      const p = this.geom.progressToPoint(cum, total, track.sector_splits[i]);
+      const s = this.worldToScreen(p.x, p.y);
+      if (Math.hypot(s.x - sx, s.y - sy) <= Math.max(8, 9 * Math.sqrt(scale)) + 4) {
+        return { kind: 'sector-split', splitIndex: i };
+      }
+    }
 
     for (let i = 0; i < track.drs_zones.length; i++) {
       const z = track.drs_zones[i];
@@ -475,6 +499,7 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
           v: 'select',
           d: 'delete',
           s: 'sector',
+          m: 'micro',
           r: 'drs',
           h: 'pan',
         };
@@ -500,6 +525,17 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
+    const nearest = this.nearestPathSegment(world, pts);
+    if (nearest && nearest.distance <= 14 / this.state.view().scale) {
+      const insertIndex = nearest.segmentIndex + 1;
+      const point = this.maybeSnap(nearest.point);
+      this.state.update((t) => {
+        t.points.splice(insertIndex, 0, [point.x, point.y]);
+      });
+      this.state.selectedPointIndex.set(insertIndex);
+      return;
+    }
+
     const nearFirst = this.geom.dist({ x: pts[0][0], y: pts[0][1] }, world) <= hitRadius * 1.5;
     if (nearFirst && pts.length >= 3) {
       this.state.toast('Path is closed. Use Select tool to move points or Delete tool to remove.', 'ok');
@@ -515,6 +551,29 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
       }
     });
     this.state.selectedPointIndex.set(this.state.track().points.length - 1);
+  }
+
+  private nearestPathSegment(
+    point: Pt,
+    points: number[][],
+  ): { segmentIndex: number; point: Pt; distance: number } | null {
+    let nearest: { segmentIndex: number; point: Pt; distance: number } | null = null;
+    for (let i = 0; i < points.length; i++) {
+      const start = points[i];
+      const end = points[(i + 1) % points.length];
+      const dx = end[0] - start[0];
+      const dy = end[1] - start[1];
+      const lengthSquared = dx * dx + dy * dy;
+      if (lengthSquared === 0) continue;
+
+      const t = Math.max(0, Math.min(1, ((point.x - start[0]) * dx + (point.y - start[1]) * dy) / lengthSquared));
+      const projected = { x: start[0] + t * dx, y: start[1] + t * dy };
+      const distance = this.geom.dist(point, projected);
+      if (!nearest || distance < nearest.distance) {
+        nearest = { segmentIndex: i, point: projected, distance };
+      }
+    }
+    return nearest;
   }
 
   private maybeSnap(world: Pt): Pt {
@@ -553,27 +612,83 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
     }
     const cum = this.geom.computeCumulative(track.points);
     const total = this.geom.totalLength(cum);
-    let bestProgress = 0;
-    let bestDist = Infinity;
-    const steps = 200;
-    for (let i = 0; i <= steps; i++) {
-      const p = i / steps;
-      const pt = this.geom.progressToPoint(cum, total, p);
-      const d = this.geom.dist(pt, world);
-      if (d < bestDist) {
-        bestDist = d;
-        bestProgress = p;
-      }
-    }
     if (track.sector_splits.length >= 2) {
-      this.state.toast('Already two sector splits — delete one first', 'warn');
+      this.state.toast('Already two sector splits — move an existing split instead', 'warn');
       return;
     }
+    const progress = this.geom.nearestProgress(cum, total, world);
     this.state.update((t) => {
-      t.sector_splits.push(Number(bestProgress.toFixed(4)));
+      t.sector_splits.push(Number(progress.toFixed(4)));
       t.sector_splits.sort((a, b) => a - b);
     });
-    this.state.toast(`Sector split added at ${(bestProgress * 100).toFixed(1)}%`, 'ok');
+    this.state.toast(`Sector split added at ${(progress * 100).toFixed(1)}%`, 'ok');
+  }
+
+  private addMicrosectorAt(world: Pt) {
+    const track = this.state.track();
+    if (track.points.length < 2) {
+      this.state.toast('Add some points first', 'warn');
+      return;
+    }
+
+    const micros = track.micro_sectors;
+    const totalPct = micros.reduce((sum, micro) => sum + micro.length_pct, 0);
+    if (micros.length > 0 && Math.abs(totalPct - 100) >= 0.5) {
+      this.state.toast('Normalize microsectors to 100% before adding one', 'warn');
+      return;
+    }
+
+    const cum = this.geom.computeCumulative(track.points);
+    const total = this.geom.totalLength(cum);
+    const progress = this.geom.nearestProgress(cum, total, world);
+    const positionPct = progress * 100;
+    const minimumPct = 0.1;
+
+    if (micros.length === 0) {
+      if (positionPct < minimumPct || positionPct > 100 - minimumPct) {
+        this.state.toast('Click farther from the start/finish to add a divider', 'warn');
+        return;
+      }
+      this.state.update((t) => {
+        t.micro_sectors = [
+          { type: 'straight', length_pct: Number(positionPct.toFixed(4)), target_speed_kmh: 250 },
+          { type: 'straight', length_pct: Number((100 - positionPct).toFixed(4)), target_speed_kmh: 250 },
+        ];
+      });
+      this.state.selectedMicroIndex.set(1);
+      this.state.toast('Microsector divider added', 'ok');
+      return;
+    }
+
+    let startPct = 0;
+    const index = micros.findIndex((micro) => {
+      const endPct = startPct + micro.length_pct;
+      const containsPosition = positionPct >= startPct && positionPct <= endPct;
+      if (!containsPosition) startPct = endPct;
+      return containsPosition;
+    });
+    if (index < 0) {
+      this.state.toast('Could not find a microsector at that position', 'warn');
+      return;
+    }
+
+    const current = micros[index];
+    const leftPct = positionPct - startPct;
+    const rightPct = current.length_pct - leftPct;
+    if (leftPct < minimumPct || rightPct < minimumPct) {
+      this.state.toast('Click farther from an existing divider', 'warn');
+      return;
+    }
+
+    this.state.update((t) => {
+      t.micro_sectors[index].length_pct = Number(leftPct.toFixed(4));
+      t.micro_sectors.splice(index + 1, 0, {
+        ...current,
+        length_pct: Number(rightPct.toFixed(4)),
+      });
+    });
+    this.state.selectedMicroIndex.set(index + 1);
+    this.state.toast('Microsector added at clicked position', 'ok');
   }
 
   private addDrsAt(world: Pt) {
@@ -682,14 +797,19 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
     const cum = this.geom.computeCumulative(pts);
     const total = this.geom.totalLength(cum);
 
-    this.drawRoadSurface(cum, total);
+    const thinTrackLine = this.state.thinTrackLine();
+    if (!thinTrackLine) this.drawRoadSurface(cum, total);
 
     if (this.state.showMicrosectors() && total > 0 && track.micro_sectors.length > 0) {
-      this.drawMicrosectorsOnRoad(cum, total);
+      if (thinTrackLine) {
+        this.drawMicrosectorBoundaries(cum, total, track.micro_sectors, true);
+      } else {
+        this.drawMicrosectorsOnRoad(cum, total);
+      }
     }
 
-    if (!track.hide_polyline_visual) {
-      this.drawCenterline(cum, total);
+    if (thinTrackLine || !track.hide_polyline_visual) {
+      this.drawCenterline(cum, total, thinTrackLine);
     }
 
     if (this.state.showDrs() && total > 0 && track.drs_zones.length > 0) {
@@ -791,11 +911,10 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
     this.drawMicrosectorBoundaries(cum, total, micros);
   }
 
-  private drawMicrosectorBoundaries(cum: CumulativePoint[], total: number, micros: any[]) {
+  private drawMicrosectorBoundaries(cum: CumulativePoint[], total: number, micros: any[], thin = false) {
     const ctx = this.ctx;
     const widthWorld = this.getTrackWidthWorld();
     const scale = this.state.view().scale;
-    if (widthWorld * scale < 8) return;
     const hover = this.hoverMarker();
     let cumPct = 0;
     for (let m = 0; m < micros.length - 1; m++) {
@@ -808,30 +927,33 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
       const b = this.worldToScreen(pt.x - nx, pt.y - ny);
       const isHover = hover?.kind === 'micro-boundary' && hover?.microIndex === m;
       const isDragging = this.draggingMarker?.kind === 'micro-boundary' && this.draggingMarker?.microIndex === m;
-      ctx.strokeStyle = isHover || isDragging ? '#c9acff' : 'rgba(11, 11, 18, 0.7)';
-      ctx.lineWidth = isHover || isDragging ? 3 : 1.5;
-      ctx.setLineDash(isHover || isDragging ? [4, 3] : []);
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      if (isHover || isDragging) {
-        const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-        ctx.fillStyle = '#c9acff';
+      if (!thin) {
+        ctx.strokeStyle = isHover || isDragging ? '#c9acff' : 'rgba(11, 11, 18, 0.85)';
+        ctx.lineWidth = isHover || isDragging ? 3 : widthWorld * scale >= 8 ? 1.5 : 1;
+        ctx.setLineDash(isHover || isDragging ? [4, 3] : []);
         ctx.beginPath();
-        ctx.arc(mid.x, mid.y, 4, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
       }
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      ctx.fillStyle = isHover || isDragging ? '#e2d6ff' : '#0b0b12';
+      ctx.strokeStyle = '#c9acff';
+      ctx.lineWidth = isHover || isDragging ? 2 : 1.5;
+      ctx.beginPath();
+      ctx.arc(mid.x, mid.y, isHover || isDragging ? 6 : 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
     }
   }
 
-  private drawCenterline(cum: CumulativePoint[], total: number) {
+  private drawCenterline(cum: CumulativePoint[], total: number, thin = false) {
     const ctx = this.ctx;
     const track = this.state.track();
     const pts = track.points;
-    const hasMicros = this.state.showMicrosectors() && track.micro_sectors.length > 0;
-    ctx.lineWidth = hasMicros ? 1.2 : Math.max(2, 3 * this.state.view().scale * 0.8);
+    const hasMicros = !thin && this.state.showMicrosectors() && track.micro_sectors.length > 0;
+    ctx.lineWidth = thin ? 1.5 : hasMicros ? 1.2 : Math.max(2, 3 * this.state.view().scale * 0.8);
     ctx.strokeStyle = hasMicros ? 'rgba(232, 230, 245, 0.6)' : 'rgba(182, 156, 255, 0.95)';
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
@@ -928,6 +1050,8 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
     const widthWorld = this.getTrackWidthWorld();
     const scale = this.state.view().scale;
     const half = widthWorld / 2 + 6;
+    const hover = this.hoverMarker();
+    const dragging = this.draggingMarker;
     for (let i = 0; i < track.sector_splits.length; i++) {
       const p = track.sector_splits[i];
       const pt = this.geom.progressToPoint(cum, total, p);
@@ -944,12 +1068,21 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
       ctx.lineTo(b.x, b.y);
       ctx.stroke();
       ctx.setLineDash([]);
+      const isHover = hover?.kind === 'sector-split' && hover.splitIndex === i;
+      const isDragging = dragging?.kind === 'sector-split' && dragging.splitIndex === i;
+      const markerR = Math.max(8, 9 * Math.sqrt(scale)) * (isHover || isDragging ? 1.3 : 1);
+      if (isHover || isDragging) {
+        ctx.fillStyle = 'rgba(201, 172, 255, 0.25)';
+        ctx.beginPath();
+        ctx.arc(a.x + (b.x - a.x) * 0.5, a.y + (b.y - a.y) * 0.5, markerR + 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.fillStyle = '#0b0b12';
       ctx.beginPath();
-      ctx.arc(a.x + (b.x - a.x) * 0.5, a.y + (b.y - a.y) * 0.5, Math.max(8, 9 * Math.sqrt(scale)), 0, Math.PI * 2);
+      ctx.arc(a.x + (b.x - a.x) * 0.5, a.y + (b.y - a.y) * 0.5, markerR, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = '#b69cff';
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = isHover || isDragging ? '#e2d6ff' : '#b69cff';
+      ctx.lineWidth = isHover || isDragging ? 2.5 : 1.5;
       ctx.stroke();
       ctx.fillStyle = '#b69cff';
       ctx.font = `bold ${Math.max(9, 10 * scale)}px Inter, sans-serif`;

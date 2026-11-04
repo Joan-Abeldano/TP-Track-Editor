@@ -73,13 +73,35 @@ export class MicrosectorsPanelComponent {
   }
 
   addMicro() {
-    const remaining = Math.max(0.5, 100 - this.totalPct());
-    const t: CornerType = this.track().micro_sectors.length === 0 ? 'straight' : 'med';
+    const micros = this.track().micro_sectors;
+    if (micros.length === 0) {
+      this.state.update((s) => {
+        s.micro_sectors.push({ type: 'straight', length_pct: 100, target_speed_kmh: 250 });
+      });
+      this.selected.set(0);
+      this.state.toast('Microsector added', 'ok');
+      return;
+    }
+
+    const selected = this.selected();
+    const index = selected !== null && selected < micros.length
+      ? selected
+      : micros.reduce((largest, micro, i) => micro.length_pct > micros[largest].length_pct ? i : largest, 0);
+    const current = micros[index];
+    if (current.length_pct < 0.4) {
+      this.state.toast('Microsector too small to split', 'warn');
+      return;
+    }
+    const half = Number((current.length_pct / 2).toFixed(4));
     this.state.update((s) => {
-      s.micro_sectors.push({ type: t, length_pct: Number(remaining.toFixed(2)), target_speed_kmh: 250 });
+      s.micro_sectors[index].length_pct = Number((current.length_pct - half).toFixed(4));
+      s.micro_sectors.splice(index + 1, 0, {
+        ...current,
+        length_pct: half,
+      });
     });
-    this.selected.set(this.track().micro_sectors.length - 1);
-    this.state.toast('Microsector added', 'ok');
+    this.selected.set(index + 1);
+    this.state.toast('Microsector split in half', 'ok');
   }
 
   insertAfter(i: number, e: Event) {

@@ -28,6 +28,7 @@ export class PropertiesPanelComponent {
   readonly showDrs = this.state.showDrs;
   readonly showSectors = this.state.showSectors;
   readonly showPoints = this.state.showPoints;
+  readonly thinTrackLine = this.state.thinTrackLine;
   readonly snapToGrid = this.state.snapToGrid;
   readonly gridSize = this.state.gridSize;
 

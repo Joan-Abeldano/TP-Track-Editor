@@ -79,18 +79,21 @@ export class FileBarComponent {
     if (!file) return;
     try {
       const text = await this.fileIo.loadTrackFile(file);
-      const data = JSON.parse(text) as TrackData;
+      const defaults = createEmptyTrack();
+      const data = { ...defaults, ...JSON.parse(text) } as TrackData;
       if (!data.points || !Array.isArray(data.points)) {
         throw new Error('Missing points array');
       }
+      data.sector_splits = Array.isArray(data.sector_splits) ? data.sector_splits : defaults.sector_splits;
+      data.micro_sectors = Array.isArray(data.micro_sectors) ? data.micro_sectors : defaults.micro_sectors;
+      data.drs_zones = Array.isArray(data.drs_zones) ? data.drs_zones : defaults.drs_zones;
       data.racing_surface = {
-        ...createEmptyTrack().racing_surface,
+        ...defaults.racing_surface,
         ...data.racing_surface,
         mode: 'road_course',
       };
+      data.starting_grid = { ...defaults.starting_grid, ...data.starting_grid };
       this.state.setTrack(data, file.name.replace(/\.json$/i, ''));
-      if (this.fileIo.backgroundImage) {
-      }
       this.state.toast(`Imported ${file.name}`, 'ok');
     } catch (e) {
       this.state.toast(`Import failed: ${(e as Error).message}`, 'err');
