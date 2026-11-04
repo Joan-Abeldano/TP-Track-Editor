@@ -44,9 +44,9 @@
               <span class="pct-label">#{{ i }}</span>
               <span class="cum-label">&#64; {{ cumPct()[i].toFixed(2) }}%</span>
               <span class="len-meters">{{ lengthMeters(m.length_pct) }}</span>
-              <select [value]="m.type" (change)="updateField(i, 'type', $event)" (click)="$event.stopPropagation()">
+              <select (change)="updateField(i, 'type', $event)" (click)="$event.stopPropagation()">
                 @for (ct of cornerTypes; track ct.value) {
-                  <option [value]="ct.value">{{ ct.label }}</option>
+                  <option [value]="ct.value" [selected]="ct.value === m.type">{{ ct.label }}</option>
                 }
               </select>
             </div>

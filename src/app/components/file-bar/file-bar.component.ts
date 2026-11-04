@@ -2,7 +2,7 @@ import { Component, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TrackStateService } from '../../services/track-state.service';
 import { FileIoService } from '../../services/file-io.service';
-import { TrackData, createEmptyTrack } from '../../models/track.model';
+import { CornerType, TrackData, createEmptyTrack } from '../../models/track.model';
 
 @Component({
   selector: 'app-file-bar',
@@ -85,7 +85,12 @@ export class FileBarComponent {
         throw new Error('Missing points array');
       }
       data.sector_splits = Array.isArray(data.sector_splits) ? data.sector_splits : defaults.sector_splits;
-      data.micro_sectors = Array.isArray(data.micro_sectors) ? data.micro_sectors : defaults.micro_sectors;
+      data.micro_sectors = Array.isArray(data.micro_sectors)
+        ? data.micro_sectors.map((micro, index) => ({
+          ...micro,
+          type: this.normalizeMicrosectorType(micro?.type, index),
+        }))
+        : defaults.micro_sectors;
       data.drs_zones = Array.isArray(data.drs_zones) ? data.drs_zones : defaults.drs_zones;
       data.racing_surface = {
         ...defaults.racing_surface,
@@ -98,6 +103,30 @@ export class FileBarComponent {
     } catch (e) {
       this.state.toast(`Import failed: ${(e as Error).message}`, 'err');
     }
+  }
+
+  private normalizeMicrosectorType(value: unknown, index: number): CornerType {
+    const normalized = typeof value === 'string'
+      ? value.trim().toLowerCase().replace(/[\s_-]+/g, '')
+      : '';
+    const types: Record<string, CornerType> = {
+      straight: 'straight',
+      high: 'high',
+      highspeed: 'high',
+      highspeedcorner: 'high',
+      med: 'med',
+      medium: 'med',
+      mediumspeed: 'med',
+      mediumspeedcorner: 'med',
+      low: 'low',
+      lowspeed: 'low',
+      lowspeedcorner: 'low',
+    };
+    const type = types[normalized];
+    if (!type) {
+      throw new Error(`Invalid microsector type at index ${index}: ${String(value)}`);
+    }
+    return type;
   }
 
   async onLoadBackground() {
