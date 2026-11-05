@@ -38,7 +38,6 @@ export interface TrackData {
   fuel_consumption?: number;
   dnf_modifier?: number;
   lap_modifier?: number;
-  track_time_mult?: number;
   length_km: number;
   use_raw_canvas_coordinates?: boolean;
   raw_canvas_size?: number[];
