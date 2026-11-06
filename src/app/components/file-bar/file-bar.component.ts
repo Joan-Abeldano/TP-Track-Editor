@@ -75,10 +75,13 @@ export class FileBarComponent {
   }
 
   async onImportTrack() {
-    const file = await this.fileIo.pickFile('application/json,.json');
+    const file = await this.fileIo.pickFile('application/json,.json,application/zip,.zip');
     if (!file) return;
     try {
-      const text = await this.fileIo.loadTrackFile(file);
+      const bundle = /\.zip$/i.test(file.name)
+        ? await this.fileIo.loadTrackBundle(file)
+        : null;
+      const text = bundle?.trackText ?? await this.fileIo.loadTrackFile(file);
       const defaults = createEmptyTrack();
       const data = { ...defaults, ...JSON.parse(text) } as TrackData;
       if (!data.points || !Array.isArray(data.points)) {
@@ -98,7 +101,8 @@ export class FileBarComponent {
         mode: 'road_course',
       };
       data.starting_grid = { ...defaults.starting_grid, ...data.starting_grid };
-      this.state.setTrack(data, file.name.replace(/\.json$/i, ''));
+      if (bundle) await this.fileIo.loadBackgroundFile(bundle.backgroundFile);
+      this.state.setTrack(data, file.name.replace(/\.(json|zip)$/i, ''));
       this.state.toast(`Imported ${file.name}`, 'ok');
     } catch (e) {
       this.state.toast(`Import failed: ${(e as Error).message}`, 'err');
@@ -159,8 +163,9 @@ export class FileBarComponent {
     this.state.toast('New track created', 'ok');
   }
 
-  onSaveTrack() {
+  async onSaveTrack() {
     const t = JSON.parse(JSON.stringify(this.state.track())) as TrackData;
+    t.name = this.trackName().trim() || 'track';
     const pts = t.points;
     if (pts.length >= 2) {
       const first = pts[0];
@@ -177,8 +182,18 @@ export class FileBarComponent {
       this.state.toast(`Warning: microsectors sum to ${sumPct.toFixed(2)}% (should be 100%)`, 'warn');
     }
     const name = (this.trackName() || 'track').replace(/[^\w-]+/g, '_');
-    this.fileIo.downloadJson(t, name);
-    this.state.toast(`Saved ${name}.json`, 'ok');
+    const backgroundUrl = this.backgroundUrl();
+    try {
+      if (backgroundUrl) {
+        await this.fileIo.downloadTrackBundle(t, backgroundUrl, name);
+        this.state.toast(`Saved ${name}.zip with track and background`, 'ok');
+      } else {
+        this.fileIo.downloadJson(t, name);
+        this.state.toast(`Saved ${name}.json`, 'ok');
+      }
+    } catch (e) {
+      this.state.toast(`Save failed: ${(e as Error).message}`, 'err');
+    }
   }
 
   onNameInput(e: Event) {

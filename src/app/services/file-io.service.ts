@@ -1,4 +1,5 @@
 import { Injectable, signal } from '@angular/core';
+import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 
 @Injectable({ providedIn: 'root' })
 export class FileIoService {
@@ -52,10 +53,81 @@ export class FileIoService {
     const blob = new Blob([JSON.stringify(data, null, 2)], {
       type: 'application/json',
     });
+    this.downloadBlob(blob, filename.endsWith('.json') ? filename : `${filename}.json`);
+  }
+
+  async downloadTrackBundle(data: object, backgroundUrl: string, filename: string): Promise<void> {
+    const response = await fetch(backgroundUrl);
+    if (!response.ok) throw new Error('Could not read the loaded background image');
+    const contentType = response.headers.get('content-type')?.split(';')[0].toLowerCase() ?? '';
+    const extension = this.imageExtension(contentType);
+    const files = {
+      [`${filename}.json`]: strToU8(JSON.stringify(data, null, 2)),
+      [`background.${extension}`]: new Uint8Array(await response.arrayBuffer()),
+    };
+    const blob = new Blob([zipSync(files, { level: 0 })], { type: 'application/zip' });
+    this.downloadBlob(blob, `${filename}.zip`);
+  }
+
+  async loadTrackBundle(file: File): Promise<{ trackText: string; backgroundFile: File }> {
+    const entries = unzipSync(new Uint8Array(await file.arrayBuffer()));
+    const jsonEntries = Object.entries(entries).filter(([name]) => name.endsWith('.json'));
+    const imageEntry = Object.entries(entries).find(([name]) => /^background\.[^/]+$/i.test(name));
+    if (jsonEntries.length !== 1 || !imageEntry) {
+      throw new Error('Bundle must contain one track JSON and one background image');
+    }
+
+    const extension = imageEntry[0].split('.').pop()!.toLowerCase();
+    const mimeType = this.imageMimeType(extension);
+    const backgroundFile = new File(
+      [new Blob([imageEntry[1]], { type: mimeType })],
+      imageEntry[0],
+      { type: mimeType },
+    );
+    return { trackText: strFromU8(jsonEntries[0][1]), backgroundFile };
+  }
+
+  private imageExtension(mimeType: string): string {
+    const extensions: Record<string, string> = {
+      'image/png': 'png',
+      'image/jpeg': 'jpg',
+      'image/webp': 'webp',
+      'image/gif': 'gif',
+      'image/bmp': 'bmp',
+      'image/svg+xml': 'svg',
+      'image/avif': 'avif',
+      'image/tiff': 'tiff',
+      'image/x-icon': 'ico',
+    };
+    const extension = extensions[mimeType];
+    if (!extension) throw new Error(`Unsupported background image type: ${mimeType || 'unknown'}`);
+    return extension;
+  }
+
+  private imageMimeType(extension: string): string {
+    const mimeTypes: Record<string, string> = {
+      png: 'image/png',
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      webp: 'image/webp',
+      gif: 'image/gif',
+      bmp: 'image/bmp',
+      svg: 'image/svg+xml',
+      avif: 'image/avif',
+      tif: 'image/tiff',
+      tiff: 'image/tiff',
+      ico: 'image/x-icon',
+    };
+    const mimeType = mimeTypes[extension];
+    if (!mimeType) throw new Error(`Unsupported background image file: .${extension}`);
+    return mimeType;
+  }
+
+  private downloadBlob(blob: Blob, filename: string) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = filename.endsWith('.json') ? filename : `${filename}.json`;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

@@ -29,6 +29,7 @@ export interface StartingGrid {
 }
 
 export interface TrackData {
+  name?: string;
   wet_weather_probability_multiplier: number;
   pit_lane_loss_s: number;
   points: number[][];
