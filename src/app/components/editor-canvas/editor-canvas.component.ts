@@ -548,7 +548,7 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
     const nearest = this.nearestPathSegment(world, pts);
     if (nearest && nearest.distance <= 14 / this.state.view().scale) {
       const insertIndex = nearest.segmentIndex + 1;
-      const point = this.maybeSnap(nearest.point);
+      const point = this.maybeSnap(world);
       this.state.update((t) => {
         t.points.splice(insertIndex, 0, [point.x, point.y]);
       });
@@ -570,8 +570,8 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
   private nearestPathSegment(
     point: Pt,
     points: number[][],
-  ): { segmentIndex: number; point: Pt; distance: number } | null {
-    let nearest: { segmentIndex: number; point: Pt; distance: number } | null = null;
+  ): { segmentIndex: number; distance: number } | null {
+    let nearest: { segmentIndex: number; distance: number } | null = null;
     for (let i = 0; i < points.length; i++) {
       const start = points[i];
       const end = points[(i + 1) % points.length];
@@ -584,7 +584,7 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
       const projected = { x: start[0] + t * dx, y: start[1] + t * dy };
       const distance = this.geom.dist(point, projected);
       if (!nearest || distance < nearest.distance) {
-        nearest = { segmentIndex: i, point: projected, distance };
+        nearest = { segmentIndex: i, distance };
       }
     }
     return nearest;
