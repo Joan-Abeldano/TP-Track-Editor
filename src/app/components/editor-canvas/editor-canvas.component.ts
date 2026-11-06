@@ -203,14 +203,6 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
         this.state.selectedPointIndex.set(idx);
         this.draggingPointIndex = idx;
         this.state.beginInteraction();
-      } else {
-        const microIdx = this.hitTestMicrosector(world);
-        const drsIdx = this.hitTestDrsZone(world);
-        if (drsIdx !== null) {
-          this.state.selectedDrsIndex.set(drsIdx);
-        } else if (microIdx !== null) {
-          this.state.selectedMicroIndex.set(microIdx);
-        }
       }
     } else if (tool === 'delete') {
       const idx = this.geom.nearestPointIndex(track.points, world, hitRadius);
@@ -275,7 +267,8 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
 
     const track = this.state.track();
     const hitRadius = 8 / this.state.view().scale;
-    const idx = this.geom.nearestPointIndex(track.points, world, hitRadius);
+    const pointTool = this.tool() === 'path' || this.tool() === 'select' || this.tool() === 'delete';
+    const idx = pointTool ? this.geom.nearestPointIndex(track.points, world, hitRadius) : null;
     this.hoverPointIndex.set(idx);
     const marker = this.hitTestMarker(sx, sy);
     this.hoverMarker.set(marker);
@@ -349,6 +342,9 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
   }
 
   private hitTestMarker(sx: number, sy: number): MarkerRef | null {
+    const tool = this.tool();
+    if (tool !== 'sector' && tool !== 'micro' && tool !== 'drs') return null;
+
     const track = this.state.track();
     if (track.points.length < 2) return null;
     const cum = this.geom.computeCumulative(track.points);
@@ -359,28 +355,34 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
     const drsMarkerScreenR = Math.max(8, 7 * Math.sqrt(scale));
     const microBoundaryScreenR = Math.max(12, widthWorld * scale / 2 + 6);
 
-    for (let i = 0; i < track.sector_splits.length; i++) {
-      const p = this.geom.progressToPoint(cum, total, track.sector_splits[i]);
-      const s = this.worldToScreen(p.x, p.y);
-      if (Math.hypot(s.x - sx, s.y - sy) <= Math.max(8, 9 * Math.sqrt(scale)) + 4) {
-        return { kind: 'sector-split', splitIndex: i };
-      }
-    }
-
-    for (let i = 0; i < track.drs_zones.length; i++) {
-      const z = track.drs_zones[i];
-      const fields: { field: 'detection_progress' | 'start_progress' | 'end_progress'; kind: MarkerKind }[] = [
-        { field: 'detection_progress', kind: 'drs-det' },
-        { field: 'start_progress', kind: 'drs-start' },
-        { field: 'end_progress', kind: 'drs-end' },
-      ];
-      for (const f of fields) {
-        const p = this.geom.progressToPoint(cum, total, (z as any)[f.field]);
+    if (tool === 'sector') {
+      for (let i = 0; i < track.sector_splits.length; i++) {
+        const p = this.geom.progressToPoint(cum, total, track.sector_splits[i]);
         const s = this.worldToScreen(p.x, p.y);
-        if (Math.hypot(s.x - sx, s.y - sy) <= drsMarkerScreenR + 4) {
-          return { kind: f.kind, zoneIndex: i, field: f.field };
+        if (Math.hypot(s.x - sx, s.y - sy) <= Math.max(8, 9 * Math.sqrt(scale)) + 4) {
+          return { kind: 'sector-split', splitIndex: i };
         }
       }
+      return null;
+    }
+
+    if (tool === 'drs') {
+      for (let i = 0; i < track.drs_zones.length; i++) {
+        const z = track.drs_zones[i];
+        const fields: { field: 'detection_progress' | 'start_progress' | 'end_progress'; kind: MarkerKind }[] = [
+          { field: 'detection_progress', kind: 'drs-det' },
+          { field: 'start_progress', kind: 'drs-start' },
+          { field: 'end_progress', kind: 'drs-end' },
+        ];
+        for (const f of fields) {
+          const p = this.geom.progressToPoint(cum, total, (z as any)[f.field]);
+          const s = this.worldToScreen(p.x, p.y);
+          if (Math.hypot(s.x - sx, s.y - sy) <= drsMarkerScreenR + 4) {
+            return { kind: f.kind, zoneIndex: i, field: f.field };
+          }
+        }
+      }
+      return null;
     }
 
     if (this.state.showMicrosectors() && track.micro_sectors.length > 1) {
@@ -395,43 +397,6 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
       }
     }
 
-    return null;
-  }
-
-  private hitTestMicrosector(world: Pt): number | null {
-    const track = this.state.track();
-    if (track.points.length < 2 || track.micro_sectors.length === 0) return null;
-    const cum = this.geom.computeCumulative(track.points);
-    const total = this.geom.totalLength(cum);
-    if (total <= 0) return null;
-    const p = this.geom.progressToPoint(cum, total, this.geom.nearestProgress(cum, total, world));
-    if (this.geom.dist(p, world) > this.getTrackWidthWorld()) return null;
-    const prog = this.geom.nearestProgress(cum, total, world);
-    const pct = prog * 100;
-    let cumPct = 0;
-    for (let i = 0; i < track.micro_sectors.length; i++) {
-      cumPct += track.micro_sectors[i].length_pct;
-      if (pct <= cumPct) return i;
-    }
-    return track.micro_sectors.length - 1;
-  }
-
-  private hitTestDrsZone(world: Pt): number | null {
-    const track = this.state.track();
-    if (track.points.length < 2 || track.drs_zones.length === 0) return null;
-    const cum = this.geom.computeCumulative(track.points);
-    const total = this.geom.totalLength(cum);
-    if (total <= 0) return null;
-    const p = this.geom.progressToPoint(cum, total, this.geom.nearestProgress(cum, total, world));
-    if (this.geom.dist(p, world) > this.getTrackWidthWorld()) return null;
-    const prog = this.geom.nearestProgress(cum, total, world);
-    for (let i = 0; i < track.drs_zones.length; i++) {
-      const z = track.drs_zones[i];
-      let start = z.start_progress;
-      let end = z.end_progress;
-      if (end < start) end += 1;
-      if (prog >= start && prog <= end) return i;
-    }
     return null;
   }
 
