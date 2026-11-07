@@ -39,6 +39,7 @@ export interface TrackData {
   fuel_consumption?: number;
   dnf_modifier?: number;
   lap_modifier?: number;
+  overtaking_difficulty?: number;
   length_km: number;
   use_raw_canvas_coordinates?: boolean;
   raw_canvas_size?: number[];
@@ -61,6 +62,7 @@ export function createEmptyTrack(): TrackData {
     fuel_consumption: 1.0,
     dnf_modifier: 1.0,
     lap_modifier: 1.0,
+    overtaking_difficulty: 1.0,
     length_km: 5.0,
     use_raw_canvas_coordinates: true,
     raw_canvas_size: [1044, 1080],
