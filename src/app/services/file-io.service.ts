@@ -56,23 +56,54 @@ export class FileIoService {
     this.downloadBlob(blob, filename.endsWith('.json') ? filename : `${filename}.json`);
   }
 
-  async downloadTrackBundle(data: object, backgroundUrl: string, filename: string): Promise<void> {
-    const response = await fetch(backgroundUrl);
-    if (!response.ok) throw new Error('Could not read the loaded background image');
-    const contentType = response.headers.get('content-type')?.split(';')[0].toLowerCase() ?? '';
-    const extension = this.imageExtension(contentType);
+  async downloadTrackBundle(
+    data: object,
+    filename: string,
+    width: number,
+    height: number,
+  ): Promise<void> {
+    const backgroundBlob = await this.resizeBackground(width, height);
     const files = {
       [`${filename}.json`]: strToU8(JSON.stringify(data, null, 2)),
-      [`background.${extension}`]: new Uint8Array(await response.arrayBuffer()),
+      [`${filename}.png`]: new Uint8Array(await backgroundBlob.arrayBuffer()),
     };
     const blob = new Blob([zipSync(files, { level: 0 })], { type: 'application/zip' });
     this.downloadBlob(blob, `${filename}.zip`);
   }
 
+  private async resizeBackground(width: number, height: number): Promise<Blob> {
+    if (!Number.isInteger(width) || width <= 0 || !Number.isInteger(height) || height <= 0) {
+      throw new Error('Canvas width and height must be positive whole numbers');
+    }
+    if (!this.bgImg) throw new Error('No background image is loaded');
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Could not create a canvas to resize the background');
+    context.drawImage(this.bgImg, 0, 0, width, height);
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error('Could not encode the resized background image'));
+        }
+      }, 'image/png');
+    });
+  }
+
   async loadTrackBundle(file: File): Promise<{ trackText: string; backgroundFile: File }> {
     const entries = unzipSync(new Uint8Array(await file.arrayBuffer()));
     const jsonEntries = Object.entries(entries).filter(([name]) => name.endsWith('.json'));
-    const imageEntry = Object.entries(entries).find(([name]) => /^background\.[^/]+$/i.test(name));
+    const imageEntries = Object.entries(entries).filter(([name]) => /\.(png|jpe?g|webp|gif|bmp|svg|avif|tiff?|ico)$/i.test(name));
+    const trackBaseName = jsonEntries.length === 1
+      ? jsonEntries[0][0].replace(/\.json$/i, '')
+      : '';
+    const imageEntry = imageEntries.find(([name]) => name.replace(/\.[^.]+$/, '') === trackBaseName)
+      ?? imageEntries.find(([name]) => /^background\.[^/]+$/i.test(name));
     if (jsonEntries.length !== 1 || !imageEntry) {
       throw new Error('Bundle must contain one track JSON and one background image');
     }
@@ -85,23 +116,6 @@ export class FileIoService {
       { type: mimeType },
     );
     return { trackText: strFromU8(jsonEntries[0][1]), backgroundFile };
-  }
-
-  private imageExtension(mimeType: string): string {
-    const extensions: Record<string, string> = {
-      'image/png': 'png',
-      'image/jpeg': 'jpg',
-      'image/webp': 'webp',
-      'image/gif': 'gif',
-      'image/bmp': 'bmp',
-      'image/svg+xml': 'svg',
-      'image/avif': 'avif',
-      'image/tiff': 'tiff',
-      'image/x-icon': 'ico',
-    };
-    const extension = extensions[mimeType];
-    if (!extension) throw new Error(`Unsupported background image type: ${mimeType || 'unknown'}`);
-    return extension;
   }
 
   private imageMimeType(extension: string): string {

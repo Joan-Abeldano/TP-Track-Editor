@@ -111,12 +111,23 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
     const host = this.hostRef().nativeElement;
     const w = host.clientWidth || 800;
     const h = host.clientHeight || 600;
-    const bgW = this.fileIo.backgroundWidth() || 1044;
-    const bgH = this.fileIo.backgroundHeight() || 1080;
-    const scale = Math.min(w / bgW, h / bgH) * 0.95;
-    const offsetX = (w - bgW * scale) / 2;
-    const offsetY = (h - bgH * scale) / 2;
+    const canvasSize = this.getCanvasSize();
+    const scale = Math.min(w / canvasSize.width, h / canvasSize.height) * 0.95;
+    const offsetX = (w - canvasSize.width * scale) / 2;
+    const offsetY = (h - canvasSize.height * scale) / 2;
     this.state.view.set({ scale, offsetX, offsetY });
+  }
+
+  private getCanvasSize(): { width: number; height: number } {
+    const [rawWidth, rawHeight] = this.state.track().raw_canvas_size ?? [];
+    return {
+      width: Number.isFinite(rawWidth) && rawWidth > 0
+        ? rawWidth
+        : this.fileIo.backgroundWidth() || 1044,
+      height: Number.isFinite(rawHeight) && rawHeight > 0
+        ? rawHeight
+        : this.fileIo.backgroundHeight() || 1080,
+    };
   }
 
   resetView() {
@@ -757,7 +768,8 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
     const ctx = this.ctx;
     ctx.save();
     const tl = this.worldToScreen(0, 0);
-    const br = this.worldToScreen(img.naturalWidth, img.naturalHeight);
+    const size = this.getCanvasSize();
+    const br = this.worldToScreen(size.width, size.height);
     ctx.globalAlpha = 0.85;
     ctx.drawImage(img, tl.x, tl.y, br.x - tl.x, br.y - tl.y);
     ctx.restore();

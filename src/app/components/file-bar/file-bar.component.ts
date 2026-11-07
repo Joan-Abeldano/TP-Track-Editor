@@ -181,11 +181,21 @@ export class FileBarComponent {
     if (Math.abs(sumPct - 100) > 0.5 && t.micro_sectors.length > 0) {
       this.state.toast(`Warning: microsectors sum to ${sumPct.toFixed(2)}% (should be 100%)`, 'warn');
     }
-    const name = (this.trackName() || 'track').replace(/[^\w-]+/g, '_');
-    const backgroundUrl = this.backgroundUrl();
+    const name = (this.trackName().trim() || 'track')
+      .replace(/\s+/g, '')
+      .replace(/[^\w-]+/g, '_')
+      .toLowerCase();
     try {
-      if (backgroundUrl) {
-        await this.fileIo.downloadTrackBundle(t, backgroundUrl, name);
+      if (this.backgroundUrl()) {
+        const rawWidth = t.raw_canvas_size?.[0];
+        const rawHeight = t.raw_canvas_size?.[1];
+        const width = typeof rawWidth === 'number' && Number.isFinite(rawWidth) && rawWidth > 0
+          ? rawWidth
+          : this.fileIo.backgroundWidth();
+        const height = typeof rawHeight === 'number' && Number.isFinite(rawHeight) && rawHeight > 0
+          ? rawHeight
+          : this.fileIo.backgroundHeight();
+        await this.fileIo.downloadTrackBundle(t, name, width, height);
         this.state.toast(`Saved ${name}.zip with track and background`, 'ok');
       } else {
         this.fileIo.downloadJson(t, name);
