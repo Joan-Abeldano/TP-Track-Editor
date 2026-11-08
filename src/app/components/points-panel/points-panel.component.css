@@ -37,30 +37,6 @@
   gap: 2px;
 }
 
-.loop-action {
-  padding: 4px 8px;
-  font-size: 10px;
-}
-
-.state-pill {
-  font-size: 9px;
-  padding: 1px 6px;
-  border-radius: 8px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.state-pill.ok {
-  background: rgba(107, 216, 160, 0.16);
-  color: var(--ok);
-}
-
-.state-pill.warn {
-  background: rgba(255, 204, 107, 0.16);
-  color: var(--warn);
-}
-
 .danger-icon:hover {
   color: var(--danger);
 }
@@ -120,10 +96,6 @@
   font-weight: 700;
 }
 
-.point-row.closing .idx {
-  color: var(--text-faint);
-}
-
 .idx {
   font-family: var(--mono);
   font-size: 10px;
@@ -181,9 +153,4 @@
   border-radius: 2px;
   font-weight: 700;
   letter-spacing: 0.04em;
-}
-
-.closing-tag {
-  background: var(--text-faint);
-  color: var(--bg);
 }

@@ -3,16 +3,8 @@
     <div class="head-info">
       <span class="head-title">Points</span>
       <span class="badge">{{ track().points.length }}</span>
-      @if (closedLoop()) {
-        <span class="state-pill ok">closed loop</span>
-      } @else {
-        <span class="state-pill warn">open</span>
-      }
     </div>
     <div class="head-actions">
-      <button class="app-btn loop-action" (click)="closeLoop()" [title]="closedLoop() ? 'Open loop' : 'Close loop'">
-        {{ closedLoop() ? 'Open loop' : 'Close loop' }}
-      </button>
       <button class="app-icon-btn danger-icon" (click)="clearAll()" title="Clear all points">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
       </button>
@@ -31,7 +23,6 @@
           class="point-row"
           [class.selected]="selected() === i"
           [class.first]="i === 0"
-          [class.closing]="i === track().points.length - 1 && closedLoop()"
           (click)="select(i)"
         >
           <div class="idx">{{ i }}</div>
@@ -65,16 +56,12 @@
           <button
             class="row-del"
             (click)="deletePoint(i, $event)"
-            [disabled]="(i === 0 || i === track().points.length - 1) && closedLoop()"
             title="Delete point"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
           </button>
           @if (i === 0) {
             <span class="tag">START</span>
-          }
-          @if (i === track().points.length - 1 && closedLoop()) {
-            <span class="tag closing-tag">CLOSE</span>
           }
         </div>
       }

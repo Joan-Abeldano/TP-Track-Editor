@@ -83,7 +83,9 @@ export class FileBarComponent {
         : null;
       const text = bundle?.trackText ?? await this.fileIo.loadTrackFile(file);
       const defaults = createEmptyTrack();
-      const data = { ...defaults, ...JSON.parse(text) } as TrackData;
+      const imported = JSON.parse(text);
+      delete imported.loop_closed;
+      const data = { ...defaults, ...imported } as TrackData;
       if (!data.points || !Array.isArray(data.points)) {
         throw new Error('Missing points array');
       }
