@@ -13,23 +13,26 @@ export class FileIoService {
   }
 
   loadBackgroundFile(file: File): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => {
-        const url = reader.result as string;
-        const img = new Image();
-        img.onload = () => {
-          this.bgImg = img;
-          this.backgroundUrl.set(url);
-          this.backgroundWidth.set(img.naturalWidth);
-          this.backgroundHeight.set(img.naturalHeight);
-          resolve();
-        };
-        img.onerror = () => reject(new Error('Invalid image'));
-        img.src = url;
-      };
+      reader.onload = () => resolve(reader.result as string);
       reader.onerror = () => reject(new Error('Could not read file'));
       reader.readAsDataURL(file);
+    }).then((url) => this.loadBackgroundDataUrl(url));
+  }
+
+  loadBackgroundDataUrl(url: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        this.bgImg = img;
+        this.backgroundUrl.set(url);
+        this.backgroundWidth.set(img.naturalWidth);
+        this.backgroundHeight.set(img.naturalHeight);
+        resolve();
+      };
+      img.onerror = () => reject(new Error('Invalid image'));
+      img.src = url;
     });
   }
 
@@ -154,6 +157,25 @@ export class FileIoService {
       input.type = 'file';
       input.accept = accept;
       input.onchange = () => resolve(input.files?.[0] ?? null);
+      input.click();
+    });
+  }
+
+  pickFiles(
+    accept: string,
+    options: { multiple?: boolean; directory?: boolean } = {},
+  ): Promise<File[]> {
+    return new Promise((resolve) => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = accept;
+      if (options.multiple !== false) input.multiple = true;
+      if (options.directory) {
+        input.setAttribute('webkitdirectory', '');
+        input.setAttribute('directory', '');
+      }
+      input.onchange = () => resolve(Array.from(input.files ?? []));
+      input.addEventListener('cancel', () => resolve([]));
       input.click();
     });
   }

@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "smoke": "esbuild tools/gen-smoke.ts --bundle --platform=node --format=esm --outfile=tools/.tmp/gen-smoke.mjs && node tools/.tmp/gen-smoke.mjs"
   },
   "private": true,
   "dependencies": {

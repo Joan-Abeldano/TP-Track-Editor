@@ -1,0 +1,253 @@
+:host {
+  display: contents;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.dialog {
+  width: min(540px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+}
+
+header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+h2 {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+
+header p {
+  margin: 4px 0 0;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.close {
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.close:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.group + .group {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.group h3 {
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.hint {
+  margin: -4px 0 0;
+  color: var(--text-faint);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.row > label {
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.inline {
+  display: flex;
+  gap: 8px;
+}
+
+.inline input {
+  flex: 1;
+}
+
+.corpus-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.corpus-status {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.corpus-status b {
+  color: var(--accent);
+  font-family: var(--mono);
+}
+
+.corpus-empty {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.field span {
+  color: var(--text-faint);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.slider {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.slider-label {
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.slider-label b {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev-2);
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--accent);
+}
+
+input[type='range'] {
+  padding: 0;
+  accent-color: var(--accent);
+}
+
+.error {
+  margin: 0 20px 14px;
+  padding: 9px 11px;
+  border: 1px solid rgba(255, 107, 139, 0.45);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 107, 139, 0.08);
+  color: #ff8fa5;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px 18px;
+  border-top: 1px solid var(--border);
+}
+
+.btn {
+  padding: 8px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev-2);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.btn.ghost {
+  background: transparent;
+  color: var(--text-dim);
+}
+
+.btn.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #081018;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

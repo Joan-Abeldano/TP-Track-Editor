@@ -1,0 +1,154 @@
+@if (open) {
+  <div class="backdrop" (click)="onBackdrop()">
+    <div class="dialog" role="dialog" aria-modal="true" aria-label="Generate procedural track" (click)="$event.stopPropagation()">
+      <header>
+        <div>
+          <h2>Procedural track</h2>
+          <p>Load tracks and generate a new one using the data lol.</p>
+        </div>
+        <button class="close" type="button" (click)="close()" [disabled]="busy()" aria-label="Close">×</button>
+      </header>
+
+      <div class="form">
+        <section class="group">
+          <div class="corpus-actions">
+            <button class="btn ghost" type="button" (click)="loadCorpus(false)" [disabled]="corpusBusy()">
+              {{ corpusBusy() ? 'Reading tracks…' : 'Load track files…' }}
+            </button>
+            <button class="btn ghost" type="button" (click)="loadCorpus(true)" [disabled]="corpusBusy()">
+              Load folder…
+            </button>
+          </div>
+
+          @if (corpusCount() > 0) {
+            <p class="corpus-status">
+              <b>{{ corpusCount() }}</b> tracks loaded
+            </p>
+          } @else {
+            <p class="corpus-empty">Load your tracks to enable generation.</p>
+          }
+
+          @if (corpusNote()) {
+            <p class="hint">{{ corpusNote() }}</p>
+          }
+        </section>
+
+        <section class="group">
+          <h3>Layout</h3>
+
+          <div class="row">
+            <label for="gen-seed">Seed</label>
+            <div class="inline">
+              <input id="gen-seed" type="number" min="0" placeholder="random" [value]="seed ?? ''" (input)="onSeed($event)" [disabled]="busy()" />
+              <button class="btn ghost" type="button" (click)="reroll()" [disabled]="busy()">Reroll</button>
+            </div>
+          </div>
+
+          <div class="grid">
+            <label class="field" for="gen-length">
+              Length <span>km · 0 = auto</span>
+              <input id="gen-length" type="number" min="0" max="12" step="0.1" [value]="lengthKm" (input)="onLength($event)" [disabled]="busy()" />
+            </label>
+            <label class="field" for="gen-corners">
+              Corners <span>0 = any</span>
+              <input id="gen-corners" type="number" min="0" max="40" step="1" [value]="cornerCount" (input)="onCorners($event)" [disabled]="busy()" />
+            </label>
+          </div>
+
+          <div class="row">
+            <label for="gen-drs">DRS zones</label>
+            <input id="gen-drs" type="number" min="0" max="6" step="1" [value]="drsZones" (input)="onDrsZones($event)" [disabled]="busy()" />
+          </div>
+        </section>
+
+        <section class="group">
+          <h3>Racing</h3>
+          <p class="hint">Blank fields use the defaults.</p>
+
+          <div class="grid">
+            <label class="field" for="gen-width">
+              Width <span>metres</span>
+              <input id="gen-width" type="number" min="6" max="24" step="0.5" placeholder="auto" [value]="settings.widthM ?? ''" (input)="onSetting($event, 'widthM')" [disabled]="busy()" />
+            </label>
+            <label class="field" for="gen-overtaking">
+              Overtaking <span>difficulty ×</span>
+              <input id="gen-overtaking" type="number" min="0.2" max="2.5" step="0.05" placeholder="auto" [value]="settings.overtaking ?? ''" (input)="onSetting($event, 'overtaking')" [disabled]="busy()" />
+            </label>
+            <label class="field" for="gen-tyre">
+              Tyre wear <span>×</span>
+              <input id="gen-tyre" type="number" min="0.3" max="3" step="0.05" placeholder="auto" [value]="settings.tyreWear ?? ''" (input)="onSetting($event, 'tyreWear')" [disabled]="busy()" />
+            </label>
+            <label class="field" for="gen-fuel">
+              Fuel use <span>×</span>
+              <input id="gen-fuel" type="number" min="0.4" max="2.5" step="0.05" placeholder="auto" [value]="settings.fuelConsumption ?? ''" (input)="onSetting($event, 'fuelConsumption')" [disabled]="busy()" />
+            </label>
+            <label class="field" for="gen-wet">
+              Wet weather <span>probability ×</span>
+              <input id="gen-wet" type="number" min="0.3" max="8" step="0.1" placeholder="auto" [value]="settings.wetWeatherMultiplier ?? ''" (input)="onSetting($event, 'wetWeatherMultiplier')" [disabled]="busy()" />
+            </label>
+            <label class="field" for="gen-pit">
+              Pit lane loss <span>seconds</span>
+              <input id="gen-pit" type="number" min="8" max="90" step="0.5" placeholder="auto" [value]="settings.pitLaneLossS ?? ''" (input)="onSetting($event, 'pitLaneLossS')" [disabled]="busy()" />
+            </label>
+            <label class="field" for="gen-dnf">
+              DNF rate <span>×</span>
+              <input id="gen-dnf" type="number" min="0.3" max="3" step="0.05" placeholder="auto" [value]="settings.dnfModifier ?? ''" (input)="onSetting($event, 'dnfModifier')" [disabled]="busy()" />
+            </label>
+            <label class="field" for="gen-pole">
+              Pole side
+              <select id="gen-pole" [value]="poleSide" (change)="onPoleSide($event)" [disabled]="busy()">
+                <option value="">Auto</option>
+                <option value="left">Left</option>
+                <option value="right">Right</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="field" for="gen-nationality">
+            Nationality <span>blank = source</span>
+            <input id="gen-nationality" type="text" maxlength="24" placeholder="auto · e.g. argentine, italian, etc." [value]="nationality" (input)="onNationality($event)" [disabled]="busy()" />
+          </label>
+        </section>
+
+        <section class="group">
+          <h3>Identity</h3>
+          <label class="field" for="gen-name">
+            Track name <span>blank = auto</span>
+            <input id="gen-name" type="text" maxlength="60" placeholder="e.g. Something Ring" [value]="customName" (input)="onName($event)" [disabled]="busy()" />
+          </label>
+        </section>
+
+        <section class="group">
+          <h3>Background</h3>
+          <p class="hint">A terrain map is generated automatically with every new track.</p>
+
+          <div class="grid">
+            <label class="field" for="gen-biome">
+              Terrain <span>biome</span>
+              <select id="gen-biome" [value]="biome" (change)="onBiome($event)" [disabled]="bgBusy()">
+                @for (option of biomes; track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+            <label class="field" for="gen-bg-seed">
+              Seed <span>0 = main seed</span>
+              <input id="gen-bg-seed" type="number" min="0" [value]="backgroundSeed" (input)="onBackgroundSeed($event)" [disabled]="bgBusy()" />
+            </label>
+          </div>
+        </section>
+      </div>
+
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+
+      <footer>
+        <button class="btn ghost" type="button" (click)="close()" [disabled]="busy()">Cancel</button>
+        <button class="btn primary" type="button" (click)="apply()" [disabled]="busy() || corpusBusy() || !hasCorpus()">
+          {{ busy() ? 'Generating…' : 'Generate layout' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+}

@@ -1,23 +1,28 @@
-import { Component, HostListener, inject } from '@angular/core';
+import { Component, HostListener, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TrackStateService } from '../../services/track-state.service';
 import { FileIoService } from '../../services/file-io.service';
+import { TrackBackgroundService } from '../../services/track-background.service';
 import { CornerType, TrackData, createEmptyTrack } from '../../models/track.model';
+import { GenerateDialogComponent } from '../generate-dialog/generate-dialog.component';
 
 @Component({
   selector: 'app-file-bar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, GenerateDialogComponent],
   templateUrl: './file-bar.component.html',
   styleUrl: './file-bar.component.css',
 })
 export class FileBarComponent {
   private state = inject(TrackStateService);
   private fileIo = inject(FileIoService);
+  private background = inject(TrackBackgroundService);
 
   readonly trackName = this.state.trackName;
   readonly backgroundUrl = this.fileIo.backgroundUrl;
   readonly hasPoints = this.state.hasPoints;
+  readonly showGenerate = signal(false);
+  readonly bgBusy = signal(false);
   showBrandMark = false;
 
   @HostListener('window:keydown', ['$event'])
@@ -148,6 +153,20 @@ export class FileBarComponent {
       this.state.toast(`Background ${w}×${h} loaded`, 'ok');
     } catch (e) {
       this.state.toast(`Background failed: ${(e as Error).message}`, 'err');
+    }
+  }
+
+  async onRegenerateBackground() {
+    const track = this.state.track();
+    if (track.points.length === 0 || this.bgBusy()) return;
+    this.bgBusy.set(true);
+    try {
+      await this.background.regenerate(track);
+      this.state.toast('Background regenerated', 'ok');
+    } catch (e) {
+      this.state.toast(`Background failed: ${(e as Error).message}`, 'err');
+    } finally {
+      this.bgBusy.set(false);
     }
   }
 
