@@ -771,15 +771,19 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
     const thinTrackLine = this.state.thinTrackLine();
     if (!thinTrackLine) this.drawRoadSurface(cum, total);
 
-    if (this.state.showMicrosectors() && total > 0 && track.micro_sectors.length > 0) {
+    const showMicrosectors = this.state.showMicrosectors() && track.micro_sectors.length > 0;
+    const hasColoredThinMicrosectors = thinTrackLine && showMicrosectors && total > 0;
+    const pointsDrawnBeforeMicrosectors = hasColoredThinMicrosectors && this.state.showPoints();
+    if (pointsDrawnBeforeMicrosectors) this.drawPoints(screenPts);
+
+    if (showMicrosectors && total > 0) {
+      this.drawMicrosectorsOnRoad(cum, total, thinTrackLine);
       if (thinTrackLine) {
         this.drawMicrosectorBoundaries(cum, total, track.micro_sectors, true);
-      } else {
-        this.drawMicrosectorsOnRoad(cum, total);
       }
     }
 
-    if (thinTrackLine || !track.hide_polyline_visual) {
+    if ((thinTrackLine || !track.hide_polyline_visual) && !hasColoredThinMicrosectors) {
       this.drawCenterline(cum, total, thinTrackLine);
     }
 
@@ -791,7 +795,7 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
       this.drawSectors(cum, total);
     }
 
-    if (this.state.showPoints()) {
+    if (this.state.showPoints() && !pointsDrawnBeforeMicrosectors) {
       this.drawPoints(screenPts);
     }
   }
@@ -841,18 +845,18 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  private drawMicrosectorsOnRoad(cum: CumulativePoint[], total: number) {
+  private drawMicrosectorsOnRoad(cum: CumulativePoint[], total: number, thin = false) {
     const ctx = this.ctx;
     const track = this.state.track();
     const micros = track.micro_sectors;
     const widthWorld = this.getTrackWidthWorld();
     const scale = this.state.view().scale;
-    const widthScreen = widthWorld * scale * 0.92;
+    const widthScreen = thin ? 4 : widthWorld * scale * 0.92;
     const selectedMicro = this.state.selectedMicroIndex();
     let cumPct = 0;
     const steps = 24;
     ctx.lineJoin = 'round';
-    ctx.lineCap = 'butt';
+    ctx.lineCap = thin ? 'round' : 'butt';
     for (let m = 0; m < micros.length; m++) {
       const ms = micros[m];
       const startP = cumPct;
@@ -860,8 +864,10 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
       const typeInfo = CORNER_TYPES.find((c) => c.value === ms.type) ?? CORNER_TYPES[0];
       const isSelected = selectedMicro === m;
       ctx.strokeStyle = typeInfo.color;
-      ctx.lineWidth = Math.max(2.5, widthScreen) + (isSelected ? Math.max(2, widthScreen * 0.18) : 0);
-      ctx.globalAlpha = isSelected ? 0.95 : 0.72;
+      ctx.lineWidth = thin
+        ? widthScreen + (isSelected ? 1 : 0)
+        : Math.max(2.5, widthScreen) + (isSelected ? Math.max(2, widthScreen * 0.18) : 0);
+      ctx.globalAlpha = thin || isSelected ? 1 : 0.72;
       ctx.beginPath();
       let started = false;
       for (let i = 0; i <= steps; i++) {
@@ -879,7 +885,7 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
       cumPct = endP;
     }
     ctx.globalAlpha = 1;
-    this.drawMicrosectorBoundaries(cum, total, micros);
+    if (!thin) this.drawMicrosectorBoundaries(cum, total, micros);
   }
 
   private drawMicrosectorBoundaries(cum: CumulativePoint[], total: number, micros: any[], thin = false) {
@@ -909,11 +915,12 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
         ctx.setLineDash([]);
       }
       const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      const markerRadius = isHover || isDragging ? 6 : thin ? 2.5 : 4;
       ctx.fillStyle = isHover || isDragging ? '#e2d6ff' : '#0b0b12';
       ctx.strokeStyle = '#c9acff';
       ctx.lineWidth = isHover || isDragging ? 2 : 1.5;
       ctx.beginPath();
-      ctx.arc(mid.x, mid.y, isHover || isDragging ? 6 : 4, 0, Math.PI * 2);
+      ctx.arc(mid.x, mid.y, markerRadius, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
     }
@@ -1071,7 +1078,9 @@ export class EditorCanvasComponent implements AfterViewInit, OnDestroy {
     const sel = this.state.selectedPointIndex();
     const hover = this.hoverPointIndex();
     const scale = this.state.view().scale;
-    const r = Math.max(3, 5 * Math.sqrt(scale));
+    const r = this.state.thinTrackLine()
+      ? Math.max(2, 2.5 * Math.sqrt(scale))
+      : Math.max(3, 5 * Math.sqrt(scale));
     for (let i = 0; i < screenPts.length; i++) {
       const p = screenPts[i];
       const isStart = i === 0 && track.points.length >= 2 && this.arrayEq(track.points[0], track.points[track.points.length - 1]);
